@@ -1,4 +1,4 @@
-module github.com/things-labs/cicd-go-template
+module github.com/things-go/cert4go
 
 go 1.15
 
