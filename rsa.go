@@ -1,49 +1,20 @@
-package cpt
+package cert4go
 
 import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"os"
 
 	"golang.org/x/crypto/pkcs12"
 )
 
 var (
 	ErrNotPEMEncodedKey = errors.New("cert4go: key must be PEM encoded PKCS1 or PKCS8 private key")
-	ErrNotRSAPrivateKey = errors.New("cert4go: Key is not a valid RSA private key")
-	ErrNotRSAPublicKey  = errors.New("cert4go: Key is not a valid RSA public key")
+	ErrNotRSAPrivateKey = errors.New("cert4go: key is not a valid RSA private key")
+	ErrNotRSAPublicKey  = errors.New("cert4go: key is not a valid RSA public key")
 	ErrNotRSAPfxData    = errors.New("cert4go: pfx data not a valid data")
 )
-
-func LoadRSAPrivateKeyFromFile(name string) (*rsa.PrivateKey, error) {
-	keyData, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRSAPrivateKeyFromPEM(keyData)
-}
-
-func LoadRSAPublicKeyFromFile(name string) (*rsa.PublicKey, error) {
-	keyData, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	key, err := ParseRSAPublicKeyFromPEM(keyData)
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
-}
-
-func LoadPfxFromFile(name, password string) (*rsa.PrivateKey, *x509.Certificate, error) {
-	keyData, err := os.ReadFile(name)
-	if err != nil {
-		return nil, nil, err
-	}
-	return ParsePfx(keyData, password)
-}
 
 // ParseRSAPrivateKeyFromPEM PEM encoded PKCS1 or PKCS8 private key
 // if password exist,PEM encoded PKCS1 or PKCS8 private key protected with password,
@@ -79,28 +50,6 @@ func ParseRSAPrivateKeyFromPEM(key []byte, password ...string) (*rsa.PrivateKey,
 	return pkey, nil
 }
 
-// ParseRSAPublicKeyFromPEM PEM encoded PKCS1 or PKCS8 public key
-func ParseRSAPublicKeyFromPEM(key []byte) (*rsa.PublicKey, error) {
-	block, _ := pem.Decode(key)
-	if block == nil {
-		return nil, ErrNotPEMEncodedKey
-	}
-
-	parsedKey, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		cert, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return nil, err
-		}
-		parsedKey = cert.PublicKey
-	}
-	pkey, ok := parsedKey.(*rsa.PublicKey)
-	if !ok {
-		return nil, ErrNotRSAPublicKey
-	}
-	return pkey, nil
-}
-
 // ParseRSAPKCS1PrivateKeyFromPEM PEM encoded PKCS1 private key
 // if password exist,PEM encoded PKCS1 private key protected with password,
 // it will decode with password
@@ -120,7 +69,6 @@ func ParseRSAPKCS1PrivateKeyFromPEM(key []byte, password ...string) (*rsa.Privat
 			return nil, err
 		}
 	}
-
 	return x509.ParsePKCS1PrivateKey(blockBytes)
 }
 
@@ -154,6 +102,25 @@ func ParseRSAPKCS8PrivateKeyFromPEM(key []byte, password ...string) (*rsa.Privat
 	return pkey, nil
 }
 
+func ParseRSAPCKS1PublicKeyFromPem(key []byte, password ...string) (*rsa.PublicKey, error) {
+	var err error
+	var blockBytes []byte
+
+	block, _ := pem.Decode(key)
+	if block == nil {
+		return nil, ErrNotPEMEncodedKey
+	}
+
+	blockBytes = block.Bytes
+	if len(password) > 0 {
+		blockBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return x509.ParsePKCS1PublicKey(blockBytes)
+}
+
 func ParsePfx(pfxData []byte, password string) (*rsa.PrivateKey, *x509.Certificate, error) {
 	pkey, cert, err := pkcs12.Decode(pfxData, password)
 	if err != nil {
@@ -165,4 +132,51 @@ func ParsePfx(pfxData []byte, password string) (*rsa.PrivateKey, *x509.Certifica
 		return nil, nil, ErrNotRSAPfxData
 	}
 	return private, cert, nil
+}
+
+// ParseRSAPublicKeyFromPEM parse public key
+// Pem form PKCS1 or PKCS8 public key
+func ParseRSAPublicKeyFromPEM(key []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(key)
+	if block == nil {
+		return nil, ErrNotPEMEncodedKey
+	}
+	return parseRSAPublicKeyFromDer(block.Bytes)
+}
+
+// ParseRSAPublicKeyFromDer parse public key
+// PKIX, ASN.1 DER form public key
+func ParseRSAPublicKeyFromDer(key []byte) (*rsa.PublicKey, error) {
+	return parseRSAPublicKeyFromDer(key)
+}
+
+// ParseRSAPublicKey parse public key
+// - Pem format PKCS1 or PKCS8 public key
+// - PKIX, ASN.1 DER form public key
+func ParseRSAPublicKey(key []byte) (*rsa.PublicKey, error) {
+	derBytes := key
+	// test if pem format
+	block, _ := pem.Decode(key)
+	if block != nil {
+		derBytes = block.Bytes
+	}
+	return parseRSAPublicKeyFromDer(derBytes)
+}
+
+// parseRSAPublicKeyFromDer parse RSA public key from der format
+// PKIX, ASN.1 DER form public key
+func parseRSAPublicKeyFromDer(derBytes []byte) (*rsa.PublicKey, error) {
+	parsedKey, err := x509.ParsePKIXPublicKey(derBytes)
+	if err != nil {
+		cert, err := x509.ParseCertificate(derBytes)
+		if err != nil {
+			return nil, err
+		}
+		parsedKey = cert.PublicKey
+	}
+	pkey, ok := parsedKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, ErrNotRSAPublicKey
+	}
+	return pkey, nil
 }
