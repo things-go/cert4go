@@ -22,21 +22,21 @@ var (
 // it will decode with password
 func ParseRSAPKCS1PrivateKeyFromPEM(key []byte, password ...string) (*rsa.PrivateKey, error) {
 	var err error
-	var blockBytes []byte
+	var derBytes []byte
 
 	block, _ := pem.Decode(key)
 	if block == nil {
 		return nil, ErrNotPEMEncodedKey
 	}
 
-	blockBytes = block.Bytes
+	derBytes = block.Bytes
 	if len(password) > 0 {
-		blockBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
+		derBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
 		if err != nil {
 			return nil, err
 		}
 	}
-	return x509.ParsePKCS1PrivateKey(blockBytes)
+	return x509.ParsePKCS1PrivateKey(derBytes)
 }
 
 // ParseRSAPKCS8PrivateKeyFromPEM PEM encoded PKCS8 private key
@@ -44,21 +44,21 @@ func ParseRSAPKCS1PrivateKeyFromPEM(key []byte, password ...string) (*rsa.Privat
 // it will decode with password
 func ParseRSAPKCS8PrivateKeyFromPEM(key []byte, password ...string) (*rsa.PrivateKey, error) {
 	var err error
-	var blockBytes []byte
+	var derBytes []byte
 
 	block, _ := pem.Decode(key)
 	if block == nil {
 		return nil, ErrNotPEMEncodedKey
 	}
 
-	blockBytes = block.Bytes
+	derBytes = block.Bytes
 	if len(password) > 0 {
-		blockBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
+		derBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
 		if err != nil {
 			return nil, err
 		}
 	}
-	parsedKey, err := x509.ParsePKCS8PrivateKey(blockBytes)
+	parsedKey, err := x509.ParsePKCS8PrivateKey(derBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -74,24 +74,24 @@ func ParseRSAPKCS8PrivateKeyFromPEM(key []byte, password ...string) (*rsa.Privat
 // it will decode with password
 func ParseRSAPrivateKeyFromPEM(key []byte, password ...string) (*rsa.PrivateKey, error) {
 	var err error
-	var blockBytes []byte
+	var derBytes []byte
 
 	block, _ := pem.Decode(key)
 	if block == nil {
 		return nil, ErrNotPEMEncodedKey
 	}
 
-	blockBytes = block.Bytes
+	derBytes = block.Bytes
 	if len(password) > 0 {
-		blockBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
+		derBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var parsedKey interface{}
-	if parsedKey, err = x509.ParsePKCS1PrivateKey(blockBytes); err != nil {
-		if parsedKey, err = x509.ParsePKCS8PrivateKey(blockBytes); err != nil {
+	if parsedKey, err = x509.ParsePKCS1PrivateKey(derBytes); err != nil {
+		if parsedKey, err = x509.ParsePKCS8PrivateKey(derBytes); err != nil {
 			return nil, err
 		}
 	}
@@ -110,12 +110,12 @@ func ParseRSAPrivateKeyFromPEM(key []byte, password ...string) (*rsa.PrivateKey,
 func ParseRSAPrivateKey(key []byte, password ...string) (*rsa.PrivateKey, error) {
 	var err error
 
-	blockBytes := key
+	derBytes := key
 	block, _ := pem.Decode(key)
 	if block != nil {
-		blockBytes = block.Bytes
+		derBytes = block.Bytes
 		if len(password) > 0 {
-			blockBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
+			derBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
 			if err != nil {
 				return nil, err
 			}
@@ -123,8 +123,8 @@ func ParseRSAPrivateKey(key []byte, password ...string) (*rsa.PrivateKey, error)
 	}
 
 	var parsedKey interface{}
-	if parsedKey, err = x509.ParsePKCS1PrivateKey(blockBytes); err != nil {
-		if parsedKey, err = x509.ParsePKCS8PrivateKey(blockBytes); err != nil {
+	if parsedKey, err = x509.ParsePKCS1PrivateKey(derBytes); err != nil {
+		if parsedKey, err = x509.ParsePKCS8PrivateKey(derBytes); err != nil {
 			return nil, err
 		}
 	}
@@ -139,24 +139,24 @@ func ParseRSAPrivateKey(key []byte, password ...string) (*rsa.PrivateKey, error)
 // - Pem format PKCS1 or PKCS8 public key
 func ParseRSAPublicKeyFromPEM(key []byte, password ...string) (*rsa.PublicKey, error) {
 	var err error
-	var blockBytes []byte
+	var derBytes []byte
 
 	block, _ := pem.Decode(key)
 	if block == nil {
 		return nil, ErrNotPEMEncodedKey
 	}
 
-	blockBytes = block.Bytes
+	derBytes = block.Bytes
 	if len(password) > 0 {
-		blockBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
+		derBytes, err = x509.DecryptPEMBlock(block, []byte(password[0]))
 		if err != nil {
 			return nil, err
 		}
 	}
-	parsedKey, err := x509.ParsePKIXPublicKey(blockBytes)
+	parsedKey, err := x509.ParsePKIXPublicKey(derBytes)
 	if err != nil {
-		if cert, err := x509.ParseCertificate(blockBytes); err != nil {
-			if parsedKey, err = x509.ParsePKCS1PublicKey(blockBytes); err != nil {
+		if cert, err := x509.ParseCertificate(derBytes); err != nil {
+			if parsedKey, err = x509.ParsePKCS1PublicKey(derBytes); err != nil {
 				return nil, err
 			}
 		} else {

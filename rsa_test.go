@@ -10,7 +10,7 @@ const (
 	privateKeyPKCS1Filename = "testdata/private_key.key"
 	privateKeyPKCS8Filename = "testdata/private_key_pkcs8.pem"
 	publicKeyPKCS1Filename  = "testdata/public_key.pub"
-	publicKeyPKCS8Filename  = "testdata/public_key_pkcs8.pem"
+	// publicKeyPKCS8Filename  = "testdata/public_key_pkcs8.pem"
 )
 
 func TestRSAPCKS1(t *testing.T) {
