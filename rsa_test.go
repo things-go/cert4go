@@ -19,6 +19,7 @@ func TestRSAPCKS1(t *testing.T) {
 	pri2, err := LoadRSAPrivateKeyFromPEMFile(privateKeyPKCS1Filename)
 	require.NoError(t, err)
 	pri3, err := LoadRSAPrivateKeyFromFile(privateKeyPKCS1Filename)
+	require.NoError(t, err)
 
 	_, err = LoadRSAPKCS8PrivateKeyFromPEMFile(privateKeyPKCS1Filename)
 	require.Error(t, err)
@@ -40,6 +41,7 @@ func TestRSAPCKS8(t *testing.T) {
 	pri2, err := LoadRSAPrivateKeyFromPEMFile(privateKeyPKCS8Filename)
 	require.NoError(t, err)
 	pri3, err := LoadRSAPrivateKeyFromFile(privateKeyPKCS8Filename)
+	require.NoError(t, err)
 
 	_, err = LoadRSAPKCS1PrivateKeyFromPEMFile(privateKeyPKCS8Filename)
 	require.Error(t, err)
